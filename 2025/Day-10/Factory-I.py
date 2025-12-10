@@ -1,0 +1,119 @@
+import sys,math,cmath,random,os,time,psutil
+from heapq import heappush,heappop
+from bisect import bisect_right,bisect_left
+from collections import Counter,deque,defaultdict
+from itertools import permutations,combinations
+from io import BytesIO, IOBase
+from decimal import Decimal,getcontext
+
+process = psutil.Process(os.getpid())
+BUFSIZE = 8192
+class FastIO(IOBase):
+    newlines = 0
+    def __init__(self, file):
+        self._file = file
+        self._fd = file.fileno()
+        self.buffer = BytesIO()
+        self.writable = "x" in file.mode or "r" not in file.mode
+        self.write = self.buffer.write if self.writable else None
+    def read(self):
+        while True:
+            b = os.read(self._fd, max(os.fstat(self._fd).st_size, BUFSIZE))
+            if not b:
+                break
+            ptr = self.buffer.tell()
+            self.buffer.seek(0, 2), self.buffer.write(b), self.buffer.seek(ptr)
+        self.newlines = 0
+        return self.buffer.read()
+    def readline(self):
+        while self.newlines == 0:
+            b = os.read(self._fd, max(os.fstat(self._fd).st_size, BUFSIZE))
+            self.newlines = b.count(b"\n") + (not b)
+            ptr = self.buffer.tell()
+            self.buffer.seek(0, 2), self.buffer.write(b), self.buffer.seek(ptr)
+        self.newlines -= 1
+        return self.buffer.readline()
+    def flush(self):
+        if self.writable:
+            os.write(self._fd, self.buffer.getvalue())
+            self.buffer.truncate(0), self.buffer.seek(0)
+class IOWrapper(IOBase):
+    def __init__(self, file):
+        self.buffer = FastIO(file)
+        self.flush = self.buffer.flush
+        self.writable = self.buffer.writable
+        self.write = lambda s: self.buffer.write(s.encode("ascii"))
+        self.read = lambda: self.buffer.read().decode("ascii")
+        self.readline = lambda: self.buffer.readline().decode("ascii")
+sys.stdin, sys.stdout = IOWrapper(sys.stdin), IOWrapper(sys.stdout)
+
+# functions #
+# MOD = 998244353
+MOD = 10**9 + 7
+RANDOM = random.randrange(1,2**62)
+def gcd(a,b):
+    while b:
+        a,b = b,a%b
+    return a
+def lcm(a,b):
+    return a//gcd(a,b)*b
+
+II = lambda : int(sys.stdin.readline().strip())
+LII = lambda : list(map(int, sys.stdin.readline().split()))
+MI = lambda x : x(map(int, sys.stdin.readline().split()))
+SI = lambda : sys.stdin.readline().strip()
+SLI = lambda : list(map(lambda x:ord(x)-97,sys.stdin.readline().strip()))
+LII_1 = lambda : list(map(lambda x:int(x)-1, sys.stdin.readline().split()))
+LII_C = lambda x : list(map(x, sys.stdin.readline().split()))
+MATI = lambda x : [list(map(int, sys.stdin.readline().split())) for _ in range(x)]
+
+base = os.path.dirname(os.path.abspath(__file__))
+sys.stdin  = open(os.path.join(base, "input.txt"), "r")
+sys.stdout = open(os.path.join(base, "output.txt"), "w")
+sys.stderr = open(os.path.join(base, "error.txt"), "w")
+
+start = time.time()
+
+def solve():
+    L = sys.stdin.readlines()
+
+    fans = 0
+    for i in range(len(L)):
+        L1 = L[i].split(' ')
+        k = len(L1[0])-2
+        # k bits hain 
+        d = [[] for _ in range(1<<k)]
+        for j in range(1,len(L1)-1):
+            L2 = L1[j][1:-1].split(',')
+            val = 0
+            for j in L2:
+                val |= (1<<int(j))
+            for l in range(1<<k):
+                d[l].append(l^val)
+        dest = 0
+        for j in range(1,len(L1[0])-1):
+            if L1[0][j]=='#':
+                dest |= (1<<(j-1))
+        bfs = [(0,0)]
+        # print(dest,d)
+        visited = [False]*(len(d))
+        visited[0] = True
+        for x,val in bfs:
+            if x==dest:
+                fans += val
+                break
+            for j in d[x]:
+                if visited[j]:
+                    continue
+                visited[j] = True
+                bfs.append((j,val+1))
+
+    print(fans)
+    return
+
+solve()
+
+print("\n\n\n########## Stats ##########")
+print(f"Time Taken : {time.time()-start:.2f} s")
+mem = process.memory_info().rss / 1e6
+print(f"Memory Used : {mem:.2f} MB")
